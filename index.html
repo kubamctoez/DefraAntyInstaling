@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>DefraAntyInstaling</title>
+<style>
+  :root {
+    --gold: #c9a84c;
+    --gold-light: #f0d080;
+    --bg: #0a0a0a;
+    --card: #111111;
+    --border: #2a2a2a;
+    --text: #e0e0e0;
+    --muted: #666;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Segoe UI',sans-serif; height:100vh; overflow:hidden; display:flex; flex-direction:column; }
+  
+  .header { padding:20px 25px 10px; text-align:center; border-bottom:1px solid var(--border); }
+  .header h1 { font-size:1.6rem; color:var(--gold); letter-spacing:2px; font-weight:300; }
+  .header p { font-size:0.8rem; color:var(--muted); margin-top:4px; }
+  .keybind-badge { display:inline-block; background:var(--gold); color:#000; padding:2px 10px; border-radius:20px; font-weight:700; font-size:0.85rem; }
+
+  .tabs { display:flex; border-bottom:1px solid var(--border); }
+  .tab { flex:1; padding:12px; background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.9rem; transition:all 0.2s; border-bottom:2px solid transparent; }
+  .tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+  .tab:hover { color:var(--gold-light); }
+
+  .content { flex:1; overflow-y:auto; padding:20px; }
+  .tab-pane { display:none; }
+  .tab-pane.active { display:block; }
+
+  /* Selected info */
+  .selected-box { background:linear-gradient(135deg,#1a1500,#0f0f00); border:1px solid var(--gold); border-radius:12px; padding:14px 18px; margin-bottom:16px; display:none; }
+  .selected-box.show { display:block; }
+  .selected-box .label { font-size:0.75rem; color:var(--gold); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+  .selected-box .value { font-size:1rem; color:white; }
+
+  /* Question list */
+  .q-item { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:10px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; transition:all 0.2s; }
+  .q-item:hover { border-color:var(--gold); background:#161616; }
+  .q-item.selected { border-color:var(--gold); background:linear-gradient(135deg,#1a1500,#111); box-shadow:0 0 12px rgba(201,168,76,0.2); }
+  .q-num { font-size:0.75rem; color:var(--gold); margin-bottom:3px; }
+  .q-text { font-size:0.95rem; color:var(--text); margin-bottom:3px; }
+  .q-answer { font-size:0.85rem; color:#4ade80; }
+  .q-del { background:none; border:1px solid #333; color:#666; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:0.8rem; transition:all 0.2s; }
+  .q-del:hover { border-color:#ef4444; color:#ef4444; }
+
+  /* Forms */
+  .form-group { margin-bottom:16px; }
+  .form-group label { display:block; font-size:0.8rem; color:var(--gold); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+  .form-group input, .form-group textarea { width:100%; background:#111; border:1px solid var(--border); border-radius:10px; padding:12px 15px; color:var(--text); font-size:0.95rem; transition:all 0.2s; }
+  .form-group input:focus, .form-group textarea:focus { outline:none; border-color:var(--gold); box-shadow:0 0 0 2px rgba(201,168,76,0.1); }
+  .form-group textarea { height:200px; resize:vertical; font-family:monospace; font-size:0.85rem; }
+
+  /* Keybind picker */
+  .keybind-picker { background:#111; border:1px solid var(--border); border-radius:10px; padding:15px; text-align:center; cursor:pointer; transition:all 0.2s; }
+  .keybind-picker.listening { border-color:var(--gold); box-shadow:0 0 0 2px rgba(201,168,76,0.2); animation:pulse 1s infinite; }
+  .keybind-picker .key-display { font-size:1.5rem; color:var(--gold); font-weight:700; margin-bottom:5px; }
+  .keybind-picker .key-hint { font-size:0.8rem; color:var(--muted); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+  /* Buttons */
+  .btn { width:100%; padding:13px; border:none; border-radius:10px; cursor:pointer; font-size:0.95rem; font-weight:600; transition:all 0.2s; margin-top:5px; }
+  .btn-gold { background:linear-gradient(135deg,var(--gold),#a07830); color:#000; }
+  .btn-gold:hover { background:linear-gradient(135deg,var(--gold-light),var(--gold)); transform:translateY(-1px); }
+  .btn-red { background:none; border:1px solid #333; color:#666; margin-bottom:12px; }
+  .btn-red:hover { border-color:#ef4444; color:#ef4444; }
+
+  /* Status */
+  .status { padding:10px 14px; border-radius:8px; margin-top:12px; font-size:0.9rem; display:none; }
+  .status.ok { background:#0a2010; border:1px solid #166534; color:#4ade80; display:block; }
+  .status.err { background:#200a0a; border:1px solid #991b1b; color:#f87171; display:block; }
+
+  /* OCR paste area */
+  .paste-area { background:#111; border:2px dashed var(--border); border-radius:12px; padding:30px; text-align:center; color:var(--muted); cursor:pointer; margin-bottom:16px; transition:all 0.2s; }
+  .paste-area:hover, .paste-area.active { border-color:var(--gold); color:var(--gold); }
+
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-track { background:var(--bg); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⌨ DefraAntyInstaling</h1>
+  <p>Wybierz pytanie → naciśnij <span class="keybind-badge" id="hdr-key">F9</span></p>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="questions">Pytania</button>
+  <button class="tab" data-tab="add">Dodaj</button>
+  <button class="tab" data-tab="ocr">OCR</button>
+  <button class="tab" data-tab="settings">Ustawienia</button>
+</div>
+
+<div class="content">
+
+  <!-- PYTANIA -->
+  <div class="tab-pane active" id="tab-questions">
+    <div class="selected-box" id="selected-box">
+      <div class="label">Wybrano</div>
+      <div class="value" id="selected-val"></div>
+    </div>
+    <button class="btn btn-red" onclick="clearAll()">🗑 Wyczyść wszystkie</button>
+    <div id="q-list"></div>
+  </div>
+
+  <!-- DODAJ -->
+  <div class="tab-pane" id="tab-add">
+    <div class="form-group">
+      <label>Pytanie</label>
+      <input type="text" id="inp-q" placeholder="Wpisz pytanie...">
+    </div>
+    <div class="form-group">
+      <label>Odpowiedź</label>
+      <input type="text" id="inp-a" placeholder="Wpisz odpowiedź...">
+    </div>
+    <button class="btn btn-gold" id="btn-add">Dodaj pytanie</button>
+    <div class="status" id="add-status"></div>
+  </div>
+
+  <!-- OCR -->
+  <div class="tab-pane" id="tab-ocr">
+    <div class="paste-area" id="paste-area">
+      📋 Naciśnij Ctrl+V, żeby wkleić screenshot
+    </div>
+    <div id="ocr-preview" style="display:none">
+      <img id="ocr-img" style="max-width:100%;border-radius:10px;margin-bottom:12px;">
+      <div class="form-group">
+        <label>Rozpoznany tekst (popraw jeśli trzeba)</label>
+        <textarea id="ocr-text" placeholder="pytanie > odpowiedź&#10;pytanie > odpowiedź"></textarea>
+        <small style="color:var(--muted);font-size:0.8rem;">Format: pytanie > odpowiedź (każda linia)</small>
+      </div>
+      <button class="btn btn-gold" id="btn-ocr-save">Zapisz do bazy</button>
+    </div>
+    <div class="status" id="ocr-status"></div>
+  </div>
+
+  <!-- USTAWIENIA -->
+  <div class="tab-pane" id="tab-settings">
+    <div class="form-group">
+      <label>Klawisz skrótu</label>
+      <div class="keybind-picker" id="keybind-picker">
+        <div class="key-display" id="key-display">F9</div>
+        <div class="key-hint" id="key-hint">Kliknij i naciśnij klawisz</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Opóźnienie między literami (ms)</label>
+      <input type="number" id="inp-delay" value="50" min="0" max="500" step="10">
+    </div>
+    <button class="btn btn-gold" id="btn-save-settings">Zapisz ustawienia</button>
+    <div class="status" id="settings-status"></div>
+
+    <div style="margin-top:30px;border-top:1px solid #2a2a2a;padding-top:20px;">
+      <div class="form-group">
+        <label>📁 Konfiguracje (.cfg)</label>
+        <select id="cfg-list" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:10px;padding:12px;color:#e0e0e0;font-size:0.95rem;">
+          <option value="">-- wybierz plik --</option>
+        </select>
+      </div>
+      <button class="btn btn-gold" id="btn-load-cfg" style="margin-bottom:10px;">📂 Wczytaj wybrany config</button>
+      <div class="form-group" style="margin-top:10px;">
+        <label>Zapisz obecne pytania jako config:</label>
+        <input type="text" id="cfg-name" placeholder="nazwa (bez .cfg)">
+      </div>
+      <button class="btn btn-gold" id="btn-save-cfg">💾 Zapisz jako .cfg</button>
+      <div class="status" id="cfg-status"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="renderer.js"></script>
+</body>
+</html>

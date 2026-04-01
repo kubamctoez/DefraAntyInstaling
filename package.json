@@ -1,0 +1,35 @@
+{
+  "name": "defra-anty-instaling",
+  "version": "1.0.0",
+  "description": "DefraAntyInstaling - Auto typer",
+  "author": "Defra",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.defra.antyinstaling",
+    "productName": "DefraAntyInstaling",
+    "win": {
+      "target": "portable"
+    },
+    "extraResources": [
+      { "from": "typer", "to": "typer" },
+      { "from": "cfg", "to": "cfg" }
+    ],
+    "files": [
+      "main.js",
+      "renderer.js",
+      "index.html",
+      "node_modules/**/*"
+    ]
+  },
+  "dependencies": {
+    "tesseract.js": "^5.0.0"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
+  }
+}
