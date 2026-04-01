@@ -32,3 +32,4 @@ npm run build
 
 Plik .exe będzie w folderze `dist/`
 
+Wszystkie prawa zastrzeżone 2026, produkt jest dostępny za darmo, pod warunkiem wskazaniu oginalnego linku z githuba "https://github.com/kubamctoez/DefraAntyInstaling/"
