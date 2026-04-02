@@ -27,37 +27,48 @@ async function init() {
     settings_code = s.keybindCode || 67;
 }
 
-function renderQuestions() {
+function renderQuestions(filter = '') {
     const list = document.getElementById('q-list');
-    if (!questions.length) {
-        list.innerHTML = '<p style="color:#444;text-align:center;padding:40px 0;">Brak pytań</p>';
+    const filtered = filter
+        ? questions.filter((q, i) => q.question.toLowerCase().includes(filter.toLowerCase()) || String(i+1).includes(filter))
+        : questions;
+
+    if (!filtered.length) {
+        list.innerHTML = '<p style="color:#444;text-align:center;padding:40px 0;">' + (filter ? 'Brak wyników' : 'Brak pytań') + '</p>';
         return;
     }
-    list.innerHTML = questions.map((q, i) => `
-        <div class="q-item ${selectedId === i ? 'selected' : ''}" data-id="${i}">
+    list.innerHTML = filtered.map((q, i) => {
+        const origIdx = questions.indexOf(q);
+        return `
+        <div class="q-item ${selectedId === origIdx ? 'selected' : ''}" data-id="${origIdx}">
             <div class="q-content">
-                <div class="q-num">${i + 1}.</div>
-                <div class="q-text">${q.question}</div>
+                <div class="q-num">${origIdx + 1}.</div>
+                <div class="q-text">${highlight(q.question, filter)}</div>
                 <div class="q-answer">→ ${q.answer}</div>
             </div>
-            <button class="q-del" onclick="delQ(${i});event.stopPropagation()">Usuń</button>
-        </div>
-    `).join('');
+            <button class="q-del" onclick="delQ(${origIdx});event.stopPropagation()">Usuń</button>
+        </div>`;
+    }).join('');
 
     document.querySelectorAll('.q-item').forEach(el => {
         el.addEventListener('click', () => {
             const id = parseInt(el.dataset.id);
-            // Kliknięcie ponownie odznacza
             if (selectedId === id) {
                 selectedId = null;
                 ipcRenderer.invoke('select-answer', '');
                 document.getElementById('selected-box').classList.remove('show');
-                renderQuestions();
+                renderQuestions(document.getElementById('search-input').value);
             } else {
                 selectQ(id);
             }
         });
     });
+}
+
+function highlight(text, filter) {
+    if (!filter) return text;
+    const re = new RegExp(`(${filter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return text.replace(re, '<mark style="background:#c9a84c;color:#000;border-radius:3px;">$1</mark>');
 }
 
 function selectQ(id) {
@@ -66,7 +77,7 @@ function selectQ(id) {
     ipcRenderer.invoke('select-answer', q.answer);
     document.getElementById('selected-val').textContent = `${q.question} → ${q.answer}`;
     document.getElementById('selected-box').classList.add('show');
-    renderQuestions();
+    renderQuestions(document.getElementById('search-input').value);
 }
 
 window.delQ = async function(id) {
@@ -166,6 +177,42 @@ document.getElementById('btn-ocr-save').addEventListener('click', async () => {
     showStatus(document.getElementById('ocr-status'), `✓ Dodano ${added} pytań!`, true);
 });
 
+// Search
+const searchInput = document.getElementById('search-input');
+searchInput.addEventListener('input', () => renderQuestions(searchInput.value));
+
+// Search keybind picker
+let searchKeybind = 'Ctrl+F';
+const searchPicker = document.getElementById('search-keybind-picker');
+const searchKeyDisplay = document.getElementById('search-key-display');
+const searchKeyHint = document.getElementById('search-key-hint');
+let listeningForSearchKey = false;
+
+searchPicker.addEventListener('click', () => {
+    listeningForSearchKey = true;
+    searchPicker.classList.add('listening');
+    searchKeyHint.textContent = 'Naciśnij klawisz...';
+    searchKeyDisplay.textContent = '?';
+});
+
+// Global search shortcut
+document.addEventListener('keydown', (e) => {
+    if (listeningForSearchKey) return;
+    // Check if search keybind pressed
+    const key = e.key === ' ' ? 'Space' : e.key;
+    const combo = (e.ctrlKey && !e.key.match(/^Control/) ? 'Ctrl+' : '') + (e.altKey && !e.key.match(/^Alt/) ? 'Alt+' : '') + (key.length === 1 ? key.toUpperCase() : key);
+    if (combo === searchKeybind) {
+        e.preventDefault();
+        // Switch to questions tab and focus search
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        document.querySelector('.tab[data-tab="questions"]').classList.add('active');
+        document.getElementById('tab-questions').classList.add('active');
+        searchInput.focus();
+        searchInput.select();
+    }
+});
+
 // Keybind picker
 const picker = document.getElementById('keybind-picker');
 const keyDisplay = document.getElementById('key-display');
@@ -179,6 +226,19 @@ picker.addEventListener('click', () => {
 });
 
 document.addEventListener('keydown', async (e) => {
+    if (listeningForSearchKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        listeningForSearchKey = false;
+        searchPicker.classList.remove('listening');
+        const key = e.key === ' ' ? 'Space' : e.key;
+        const combo = (e.ctrlKey && !e.key.match(/^Control/) ? 'Ctrl+' : '') + (e.altKey && !e.key.match(/^Alt/) ? 'Alt+' : '') + (key.length === 1 ? key.toUpperCase() : key);
+        searchKeybind = combo;
+        searchKeyDisplay.textContent = combo;
+        searchKeyHint.textContent = 'Kliknij i naciśnij klawisz';
+        showStatus(document.getElementById('settings-status'), '✓ Bind wyszukiwania: ' + combo, true);
+        return;
+    }
     if (!listeningForKey) return;
     e.preventDefault();
     e.stopPropagation();

@@ -3,13 +3,7 @@ Program polegający na fizycznym wpisywaniu liter z stworzonego cfg.
 
 Aplikacja do automatycznego wpisywania odpowiedzi.
 
-## Jak Uruchomić plik pobrany z Release ?
-- Wypakować folder win-unpacked w dowolne miejsce
-- Jednorazowo uruchomić w katalogu resources\typer\build.bat (ma powstać plik DefraKlawiatura31.exe)
-- Zawsze uruchamiać DefraAntyInstaling.exe przez uprawnienia administratorskie, lub ustawić w własciwości DefraAntyInstaling.exe zgodność i uruchom jako administrator.
-
-
-## Instalacja przez source code
+## Instalacja
 
 ```bash
 npm install
@@ -32,4 +26,3 @@ npm run build
 
 Plik .exe będzie w folderze `dist/`
 
-Wszystkie prawa zastrzeżone 2026, produkt jest dostępny za darmo, pod warunkiem wskazaniu oginalnego linku z githuba "https://github.com/kubamctoez/DefraAntyInstaling/"
